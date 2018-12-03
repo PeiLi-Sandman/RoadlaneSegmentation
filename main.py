@@ -6,6 +6,7 @@ import csv
 import time
 import utils
 import numpy as np
+import pandas as pd
 
 
 #create path for the finally trained model 
