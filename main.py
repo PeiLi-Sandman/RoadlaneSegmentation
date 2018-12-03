@@ -2,21 +2,20 @@ import os.path
 import tensorflow as tf
 import warnings
 from distutils.version import LooseVersion
-#import project_tests as tests
 import csv
 import time
 import utils
 import numpy as np
 
 
-model_path='./model/model.ckpt'
+#create path for the finally trained model 
+final_path='./model/model.ckpt'
 
-# Check TensorFlow Version
 assert LooseVersion(tf.__version__) >= LooseVersion('1.0'), 'Please use TensorFlow version 1.0 or newer.' \
                                                             '  You are using {}'.format(tf.__version__)
 print('TensorFlow Version: {}'.format(tf.__version__))
 
-# Check for a GPU
+# Check if use GPU or CPU
 if not tf.test.gpu_device_name():
     warnings.warn('No GPU found. Please use a GPU to train your neural network.')
 else:
@@ -24,12 +23,10 @@ else:
 
 
 
-def load_vgg(sess, vgg_path):
+def load_vgg_model(sess, vgg_path):
     """
-    Load Pretrained VGG Model into TensorFlow.
-    :param sess: TensorFlow Session
-    :param vgg_path: Path to vgg folder, containing "variables/" and "saved_model.pb"
-    :return: Tuple of Tensors from VGG model (image_input, keep_prob, layer3_out, layer4_out, layer7_out)
+    This is a VGG16 model for this project.
+    return: Tensors of VGG model (image_input, keep_prob, layer3_out, layer4_out, layer7_out)
     """
     # Define the name of the tensors
     vgg_tag = 'vgg16'
@@ -51,9 +48,11 @@ def load_vgg(sess, vgg_path):
 
 
 
-def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
+def add_nn_last(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
+    #This is a function with signature 12(weights) that applies L2 regularization with scope=0.5
     kernel_regularizer = tf.contrib.layers.l2_regularizer(0.5)
-    # Compute logits
+
+    #using three output tensors, "same" padding for logits generation
     layer3_logits = tf.layers.conv2d(vgg_layer3_out, num_classes, kernel_size=[1, 1],
                                      padding='same', kernel_regularizer=kernel_regularizer)
     layer4_logits = tf.layers.conv2d(vgg_layer4_out, num_classes, kernel_size=[1, 1],
@@ -79,15 +78,6 @@ def layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
 
 
 def optimize(nn_last_layer, correct_label, learning_rate, num_classes):
-    """
-    Build the TensorFLow loss and optimizer operations.
-    :param nn_last_layer: TF Tensor of the last layer in the neural network
-    :param correct_label: TF Placeholder for the correct label image
-    :param learning_rate: TF Placeholder for the learning rate
-    :param num_classes: Number of classes to classify
-    :return: Tuple of (logits, train_op, cross_entropy_loss)
-    """
-    # TODO: Implement function
     # make logits a 2D tensor where each row represents a pixel and each column a class
     logits = tf.reshape(nn_last_layer, (-1, num_classes))
     correct_label = tf.reshape(correct_label, (-1,num_classes))
@@ -101,21 +91,8 @@ def optimize(nn_last_layer, correct_label, learning_rate, num_classes):
 
 
 
-def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_loss, input_image,
-             correct_label, keep_prob, learning_rate):
-    """
-    Train neural network and print out the loss during training.
-    :param sess: TF Session
-    :param epochs: Number of epochs
-    :param batch_size: Batch size
-    :param get_batches_fn: Function to get batches of training data.  Call using get_batches_fn(batch_size)
-    :param train_op: TF Operation to train the neural network
-    :param cross_entropy_loss: TF Tensor for the amount of loss
-    :param input_image: TF Placeholder for input images
-    :param correct_label: TF Placeholder for label images
-    :param keep_prob: TF Placeholder for dropout keep probability
-    :param learning_rate: TF Placeholder for learning rate
-    """
+def train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_loss, input_image, correct_label, keep_prob, learning_rate):
+    
     # Create log file
     log_filename = "./training_progress.csv"
     log_fields = ['learning_rate', 'exec_time (s)', 'training_loss']
@@ -160,15 +137,13 @@ def run():
     image_shape = (160, 576)
     data_dir = './data'
     runs_dir = './runs'
-    #tests.test_for_kitti_dataset(data_dir)
-
    
 
     with tf.Session() as sess:
         vgg_path = os.path.join(data_dir, 'vgg')
-        # Create function to get batches
+       
         get_batches_fn = utils.create_batch_function(os.path.join(data_dir, 'data_road/training'), image_shape)
-        # TODO: Build NN using load_vgg, layers, and optimize function
+        
         epochs = 30
         batch_size = 8
         
@@ -177,9 +152,9 @@ def run():
         correct_label = tf.placeholder(tf.int32, [None, None, None, num_classes], name='correct_label')
         learning_rate = tf.placeholder(tf.float32, name='learning_rate')
 
-        input_image, keep_prob, vgg_layer3_out, vgg_layer4_out, vgg_layer7_out = load_vgg(sess, vgg_path)
+        input_image, keep_prob, vgg_layer3_out, vgg_layer4_out, vgg_layer7_out = load_vgg_model(sess, vgg_path)
 
-        nn_last_layer = layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes)
+        nn_last_layer = add_nn_last(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes)
        #imgMean = np.array([104, 117, 124], np.float)
         #x = tf.placeholder("float", [1, 224, 224, 3])
         #model = vgg19.VGG19(x, dropoutPro, num_classes, skip)
@@ -202,39 +177,18 @@ def run():
         #         cv2.imshow("demo", img)
         #         cv2.waitKey(0)
 	
-
         logits, train_op, cross_entropy_loss = optimize(nn_last_layer, correct_label, learning_rate, num_classes)
         input_image = tf.get_default_graph().get_tensor_by_name('image_input:0')
         #TODO: Train NN using the train_nn function
         train_nn(sess, epochs, batch_size, get_batches_fn, train_op, cross_entropy_loss, input_image,correct_label, keep_prob, learning_rate)
-
         saver = tf.train.Saver()
-        save_path = saver.save(sess, model_path)
+        save_path = saver.save(sess, final_path)
         print("Model is saved to file: %s" % save_path)
 
         # TODO: predict the testing data and save the augmented images
         utils.save_inference_samples(runs_dir, data_dir, sess, image_shape, logits, keep_prob, input_image)
 
 
-# def predict_images(test_data_path, print_speed=False):
-#     num_classes = 2
-#     image_shape = (160, 576)
-#     runs_dir = './runs'
-
-#     with tf.Session() as sess:
-#         # Predict the logits
-#         #input_image, keep_prob, vgg_layer3_out, vgg_layer4_out, vgg_layer7_out = load_vgg(sess, vgg_path)
-#         #nn_last_layer = layers(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes)
-#         #logits = tf.reshape(nn_last_layer, (-1, num_classes))
-
-
-#         # Restore the saved model
-#         saver = tf.train.Saver()
-#         saver.restore(sess, model_path)
-#         print("Restored the saved Model in file: %s" % model_path)
-
-#         # Predict the samples
-#         utils.pred_samples(runs_dir, test_data_path, sess, image_shape, logits, keep_prob, input_image, print_speed)
 
 
 
