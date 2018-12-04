@@ -11,7 +11,7 @@ The data we are using is [Kitti Road dataset](http://www.cvlibs.net/datasets/kit
 This is a `VGG16` model integrated with a fully-connected layer `FCN-8` as below shows.
 ![FCN-8](https://devblogs.nvidia.com/parallelforall/wp-content/uploads/2016/11/figure15.png)
 <p align="center">
- <img src="./img/VGG16.png" alt="Overview" width="75%" height="75%">
+ <img src="./img/vgg16.png" alt="Overview" width="75%" height="75%">
  <br>VGG16
 </p>
 
