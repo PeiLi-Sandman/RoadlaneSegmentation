@@ -3,13 +3,14 @@ Conduct a road lane segmentation using VGG16 and tensorflow
 
 
 ### Introduction
-This project deals with road lane segmentation problem based on VGG16 and tensorflow. 
+This project deals with road lane semantic segmentation problem based on VGG16 and tensorflow. 
 ### Data
 The data we are using is [Kitti Road dataset](http://www.cvlibs.net/datasets/kitti/eval_road.php) which can be downloaded from [here](http://www.cvlibs.net/download.php?file=data_road.zip). Then you can extract the dataset in `data` folder. A datafolder named `dataroad` will contain training set and test set.
 ### Implementation Details
 #### Architecture
-This is a `VGG16` model integrated with a fully-connected layer `FCN-8s` as below shows.
-![architecture](https://devblogs.nvidia.com/parallelforall/wp-content/uploads/2016/11/figure15.png)
+This is a `VGG16` model integrated with a fully-connected layer `FCN-8` as below shows.
+![VGG16](<img src="./img/vgg16.png" alt="Overview" width="75%" height="75%">)
+![FCN-8](https://www.researchgate.net/figure/Illustration-of-the-FCN-8s-network-architecture-as-proposed-in-20-In-our-method-the_fig1_305770331)
 
 ### Experiment and Result
  
