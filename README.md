@@ -9,8 +9,11 @@ The data we are using is [Kitti Road dataset](http://www.cvlibs.net/datasets/kit
 ### Implementation Details
 #### Architecture
 This is a `VGG16` model integrated with a fully-connected layer `FCN-8` as below shows.
-![VGG16](https://www.google.com/search?q=vgg16&client=ubuntu&hs=uFj&channel=fs&source=lnms&tbm=isch&sa=X&ved=0ahUKEwj8kNy3l4XfAhXDTN8KHeucDy8Q_AUIDigB&biw=1680&bih=948#imgrc=9A7P_tvyLtnP2M:)
-![FCN-8](https://www.researchgate.net/figure/Illustration-of-the-FCN-8s-network-architecture-as-proposed-in-20-In-our-method-the_fig1_305770331)
+![FCN-8](https://devblogs.nvidia.com/parallelforall/wp-content/uploads/2016/11/figure15.png)
+<p align="center">
+ <img src="./img/VGG16.png" alt="Overview" width="75%" height="75%">
+ <br>VGG16
+</p>
 
 ### Experiment and Result
  
