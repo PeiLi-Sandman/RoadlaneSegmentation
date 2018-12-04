@@ -37,9 +37,12 @@ The good and bad results are shown below.
 #### Training Loss
 | epoch         | exec_time(s)  | training loss  |
 | ------------- |:-------------:| --------------:|
-| col 3 is      | right-aligned | $1600          |
-| col 2 is      | centered      |   $12          |
-| zebra stripes | are neat      |    $1          |
+| 1             | 17.67         | 6.2378         |
+| 2             | 15.51         | 0.289          |
+| 3             | 15.51         |   0.1813       |
+| 4             | 17.67         | 6.2378         |
+| 5             | 15.51         | 0.289          |
+| 6             | 15.51         |   0.1813       |
 ### Setup
 ##### Frameworks and Packages
 Make sure you have the following is installed:
