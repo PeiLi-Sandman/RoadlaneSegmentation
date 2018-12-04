@@ -50,45 +50,45 @@ def load_vgg_model(sess, vgg_path):
 
 
 def add_nn_last(vgg_layer3_out, vgg_layer4_out, vgg_layer7_out, num_classes):
-    #This is a function with signature 12(weights) that applies L2 regularization with scope=0.5
-    kernel_regularizer = tf.contrib.layers.l2_regularizer(0.5)
+    # Use a shorter variable name for simplicity
+    layer3, layer4, layer7 = vgg_layer3_out, vgg_layer4_out, vgg_layer7_out
 
-    #using three output tensors, "same" padding for logits generation
-    layer3_logits = tf.layers.conv2d(vgg_layer3_out, num_classes, kernel_size=[1, 1],
-                                     padding='same', kernel_regularizer=kernel_regularizer)
-    layer4_logits = tf.layers.conv2d(vgg_layer4_out, num_classes, kernel_size=[1, 1],
-                                     padding='same', kernel_regularizer=kernel_regularizer)
-    layer7_logits = tf.layers.conv2d(vgg_layer7_out, num_classes, kernel_size=[1, 1],
-                                     padding='same', kernel_regularizer=kernel_regularizer)
+    # Apply 1x1 convolution in place of fully connected layer
+    fcn8 = tf.layers.conv2d(layer7, filters=num_classes, kernel_size=1, name="fcn8")
 
-    # Add skip connection before 4th and 7th layer
-    layer7_logits_up = tf.image.resize_images(layer7_logits, size=[10, 36])
-    layer_4_7_fused = tf.add(layer7_logits_up, layer4_logits)
+    # Upsample fcn8 with size depth=(4096?) to match size of layer 4 so that we can add skip connection with 4th layer
+    fcn9 = tf.layers.conv2d_transpose(fcn8, filters=layer4.get_shape().as_list()[-1],
+    kernel_size=4, strides=(2, 2), padding='SAME', name="fcn9")
 
-    # Add skip connection before (4+7)th and 3rd layer
-    layer_4_7_fused_up = tf.image.resize_images(layer_4_7_fused, size=[20, 72])
-    layer_3_4_7_fused = tf.add(layer3_logits, layer_4_7_fused_up)
+    # Add a skip connection between current final layer fcn8 and 4th layer
+    fcn9_skip_connected = tf.add(fcn9, layer4, name="fcn9_plus_vgg_layer4")
 
-    # resize to original size
-    layer_3_4_7_up = tf.image.resize_images(layer_3_4_7_fused, size=[160, 576])
-    layer_3_4_7_up = tf.layers.conv2d(layer_3_4_7_up, num_classes, kernel_size=[15, 15],
-                                      padding='same', kernel_regularizer=kernel_regularizer)
+    # Upsample again
+    fcn10 = tf.layers.conv2d_transpose(fcn9_skip_connected, filters=layer3.get_shape().as_list()[-1],
+    kernel_size=4, strides=(2, 2), padding='SAME', name="fcn10_conv2d")
 
-    return layer_3_4_7_up
+    # Add skip connection
+    fcn10_skip_connected = tf.add(fcn10, layer3, name="fcn10_plus_vgg_layer3")
+
+    # Upsample again
+    fcn11 = tf.layers.conv2d_transpose(fcn10_skip_connected, filters=num_classes,
+    kernel_size=16, strides=(8, 8), padding='SAME', name="fcn11")
+
+    return fcn11
 
 
 
 def optimize(nn_last_layer, correct_label, learning_rate, num_classes):
-    # make logits a 2D tensor where each row represents a pixel and each column a class
-    logits = tf.reshape(nn_last_layer, (-1, num_classes))
-    correct_label = tf.reshape(correct_label, (-1,num_classes))
-    # define loss function
-    cross_entropy_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits= logits, labels= correct_label))
-    # define training operation
-    optimizer = tf.train.AdamOptimizer(learning_rate= learning_rate)
-    train_op = optimizer.minimize(cross_entropy_loss)
+    # make 4d tensor to 2d tensor where each row represents a pixel and each column a class
+    logits = tf.reshape(nn_last_layer, (-1, num_classes),name="fcn_logits")
+    correct_label_reshaped = tf.reshape(correct_label, (-1,num_classes))
+    # define loss function to calculate distance between label and prediction 
+    cross_entropy_loss = tf.nn.softmax_cross_entropy_with_logits(logits= logits, labels= correct_label_reshaped[:])
+    loss_op = tf.reduce_mean(cross_entropy_loss,name="fcn_loss")
+    # define training operation find weight and 
+    train_op = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss_op, name="fcn_train_op")
 
-    return logits, train_op, cross_entropy_loss
+    return logits, train_op, loss_op
 
 
 
