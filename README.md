@@ -35,7 +35,10 @@ The good and bad results are shown below.
 
 
 #### Training Loss
-
+| epoch  | exec time(s) | training loss |
+| ------------- | ------------- |
+| 1  | 17.67  | 6.2378 |
+| 2  | 15.51  | 0.289  |
 ### Setup
 ##### Frameworks and Packages
 Make sure you have the following is installed:
